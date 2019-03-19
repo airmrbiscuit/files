@@ -80,3 +80,66 @@ CrossTable(credit_test$default, credit_cost_pred,
 
 # This does prevent a lot of the false positives, at a cost of course overall
 
+#### Attempting new methodology - random forest ####
+
+set.seed(415)
+
+# With a big set you might reduce number of trees, or restrict tree complexity and rows sampled
+
+fit_RF <- randomForest(as.factor(default) ~ checking_balance + credit_history + savings_balance + foreign_worker + months_loan_duration + other_debtors + job,
+                    data=credit_train, 
+                    importance=TRUE, 
+                    ntree=1000)
+
+credit_RF_pred <- predict(fit_RF, credit_test)
+
+CrossTable(credit_test$default, credit_RF_pred,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+varImpPlot(fit_RF)
+
+#### Alternative methodology with rpart
+
+fit_RP <- rpart(as.factor(default) ~ checking_balance + credit_history + savings_balance + foreign_worker + months_loan_duration + other_debtors + job,
+             data=credit_train,
+             method="class")
+
+
+fancyRpartPlot(fit_RP)
+
+credit_RP_pred <- predict(fit_RP, credit_test)
+
+credit_RP_pred <- as.data.frame(credit_RP_pred)
+
+credit_RP_pred$Factor <- ifelse(credit_RP_pred$`1` > 0.5,2,1)
+
+credit_RP_pred2 <- as.factor(credit_RP_pred$Factor)
+
+CrossTable(credit_test$default, credit_RF_pred,
+           prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE,
+           dnn = c('actual default', 'predicted default'))
+
+# test_RF <- as.data.frame(credit_RF_pred)
+# test_RP <- as.data.frame(credit_RP_pred2)
+
+# Values are .7 and .3 which is the split of independent variable (i.e. at highest level 30% default)
+# We then break by checking_balance into two categories (from four)
+# If not those things then only .14 default (which is 46% of node population)
+# If you have a poor credit history then you will be .69 likelihood at the bottom, but either way not good
+
+# Can control your own tree, rpart itself will use complexity
+# check the help file but this one says a minimum of 10 items before can split, seeking to control over-fitting
+
+fit_RP2 <- rpart(as.factor(default) ~ checking_balance + credit_history,
+                data=credit_train,
+                method="class",
+                control=rpart.control( minsplit = 10 ))
+
+fancyRpartPlot(fit_RP2)
+
+# this method allows you to snip parts of the tree to tidy up
+
+new.fit <- prp(fit_RP,snip=TRUE)$obj
+
+fancyRpartPlot(new.fit)
