@@ -263,3 +263,70 @@ fancyRpartPlot(new.fit)
 
 #### Further feature engineering ####
 
+combi <- rbind(train, test)
+
+# strings are imported as factors, so we need to revert
+
+combi$Name <- as.character(combi$Name)
+
+# split this name, this strsplit breaks the full name over those two symbols , and .
+
+strsplit(combi$Name[1], split='[,.]')
+
+# append the brackets into the command
+
+strsplit(combi$Name[1], split='[,.]')[[1]]
+
+# There are two items in the matrix in case there are more , or .
+# We want the second item on the nested list
+
+strsplit(combi$Name[1], split='[,.]')[[1]][2]
+
+# But how to apply this to every row, we use sapply
+# Give sapply our vector of names and the function we just created
+# It will send each name to the function
+
+
+combi$Title <- sapply(combi$Name, FUN=function(x) 
+  {strsplit(x, split='[,.]')[[1]][2]
+  })
+
+# Strip the blank space off the title
+
+combi$Title <- sub(' ', '', combi$Title)
+
+
+table(combi$Title)
+
+
+#### Alternative random forest ####
+
+# From multiple trees can grow a voting basis and account for how each tree develops differently
+# One option is bagging (bootstrap aggregating) takes a randomised sample of rows, with replacement
+# As such the sample is then different every time and tree evolves differently
+
+# illustrates example
+sample(1:10, replace = TRUE)
+
+# However a strong vector despite bagging will still dominate
+# But random forest also only takes a subset of the available variables
+# As such totally unique trees, fully grown so over-fitted but mistakes like this are averaged out over time
+
+# Maximum levels of 32 for a forest
+
+# Set your random seed so you can re-produce, otherwise will be different every time
+
+set.seed(415)
+
+# With a big set you might reduce number of trees, or restrict tree complexity and rows sampled
+
+fit <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare +
+                      Embarked + Title,
+                    data=train, 
+                    importance=TRUE, 
+                    ntree=2000)
+
+varImpPlot(fit)
+
+# Accuracy test shows how much worse the model is without each variable
+# GiNi is the purity of the nodes at each end
