@@ -346,5 +346,5 @@ abline(h = min(test.err), col = "red")
 # Shows boosting is reluctant to over-fit
 # Can see that test error for boosting does get below the test error for random forest (red line)
 
-
+# Boosting usually outperforms RF but RF easier to implement (less tuning parameters)
 
